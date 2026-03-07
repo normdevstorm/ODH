@@ -90,7 +90,8 @@ function populateSysScriptsList(dictLibrary) {
         'enen_Collins', 'enen_LDOCE6MDX', 'enen_UrbanDict', //en-en dictionaries
         'enfr_Cambridge', 'enfr_Collins', //en-fr dictionaries
         'fren_Cambridge', 'fren_Collins', //fr-cn dictionaries
-        'esen_Spanishdict', 'decn_Eudict', 'escn_Eudict', 'frcn_Eudict', 'frcn_Youdao', 'rucn_Qianyi' //msci dictionaries
+        'esen_Spanishdict', 'decn_Eudict', 'escn_Eudict', 'frcn_Eudict', 'frcn_Youdao', 'rucn_Qianyi', //msci dictionaries
+               'envi_Laban' //en-vi dictionaries
     ];
     $('#scriptslistbody').empty();
     systemscripts.forEach(script => {

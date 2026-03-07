@@ -101,6 +101,7 @@
     "fren_Cambridge": { "message": "剑桥法英词典" },
     "fren_Collins": { "message": "柯林斯法英词典" },
     "rucn_Qianyi": { "message": "千亿俄汉词典" },
+        "envi_Laban": { "message": "Laban英越词典" },
 
     "labelAlignment": { "message": "center" }
 }

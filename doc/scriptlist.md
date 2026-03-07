@@ -37,4 +37,8 @@ Here is a list of the existing dictionary scripts. You can copy the script name 
 |EN|FR|Cambridge|enfr_Cambridge|
 |EN|FR|Collins|enfr_Collins|
 
-More ...
+## Target Language: Vietnamese
+
+|Source|Target|Descrition|Name|
+|---|---|---|---|
+|EN|VI|Laban|envi_Laban|
