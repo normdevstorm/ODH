@@ -51,6 +51,10 @@ async function updateServiceStatus(options) {
             $('#service-options-ankiweb').show();
             updateAnkiProfile(options) 
             break;
+        case 'serverconnect':
+            $('#service-options-serverconnect').show();
+            updateServerProfile(options);
+            break;
         default:
             break;
     }
@@ -73,6 +77,16 @@ async function updateAnkiProfile(options) {
         else {
             $('#duplicate-option').hide();
         }
+    }
+}
+
+async function updateServerProfile(options) {
+    $('#services-status').text(chrome.i18n.getMessage('msgConnecting'));
+    let version = await options_api.getVersion();
+    if (version === null) {
+        $('#services-status').text(chrome.i18n.getMessage('msgFailed'));
+    } else {
+        $('#services-status').text(chrome.i18n.getMessage('msgSuccess', [version]));
     }
 }
 
@@ -137,6 +151,8 @@ async function onServicesChanged(e) {
         options.id = $('#id').val();
         options.password = $('#password').val();
         options.ankiconnecturl = $('#ankiconnecturl').val();
+        options.serverconnecturl = $('#serverconnecturl').val();
+        options.serverconnecttoken = $('#serverconnecttoken').val();
 
         let newOptions = await options_api.optionsChanged(options);
         updateServiceStatus(newOptions);
@@ -164,6 +180,8 @@ async function onSaveClicked(e) {
     options.password = $('#password').val();
     
     options.ankiconnecturl = $('#ankiconnecturl').val();
+    options.serverconnecturl = $('#serverconnecturl').val();
+    options.serverconnecttoken = $('#serverconnecttoken').val();
     options.tags = $('#tags').val();
     options.duplicate = $('#duplicate').val();
 
@@ -211,6 +229,8 @@ async function onReady() {
     $('#password').val(options.password);
 
     $('#ankiconnecturl').val(options.ankiconnecturl);
+    $('#serverconnecturl').val(options.serverconnecturl);
+    $('#serverconnecttoken').val(options.serverconnecttoken);
     $('#tags').val(options.tags);
     $('#duplicate').val(options.duplicate);
 
@@ -226,6 +246,7 @@ async function onReady() {
 
     $('#connect').click(onServicesChanged);
     $('#login').click(onServicesChanged);
+    $('#serverconnect-btn').click(onServicesChanged);
     $('#saveload').click(onSaveClicked);
     $('#saveclose').click(onSaveClicked);
     $('#close').click(onCloseClicked);

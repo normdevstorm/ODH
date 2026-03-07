@@ -5,6 +5,7 @@ class ODHServiceworker {
         this.options = null;
 
         this.ankiconnect = new Ankiconnect();
+        this.serverconnect = new ServerConnect();
         //this.ankiweb = new Ankiweb();
         this.target = null;
 
@@ -207,9 +208,14 @@ class ODHServiceworker {
     async api_addNote(params) {
         let { notedef, callback } = params;
 
-        const note = this.formatNote(notedef);
         try {
-            let result = await this.target.addNote(note);
+            let result;
+            if (this.target instanceof ServerConnect) {
+                result = await this.target.addNote(notedef);
+            } else {
+                const note = this.formatNote(notedef);
+                result = await this.target.addNote(note);
+            }
             callback(result);
         } catch (err) {
             console.error(err);
@@ -241,6 +247,9 @@ class ODHServiceworker {
                 break;
             case 'ankiweb':
                 this.target = this.ankiweb;
+                break;
+            case 'serverconnect':
+                this.target = this.serverconnect;
                 break;
             default:
                 this.target = null;
@@ -318,6 +327,7 @@ class ODHServiceworker {
 }
 
 importScripts('ankiconnect.js');
+importScripts('serverconnect.js');
 importScripts('builtin.js');
 importScripts('deinflector.js');
 importScripts('utils.js');
