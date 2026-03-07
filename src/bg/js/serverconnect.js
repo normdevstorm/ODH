@@ -76,6 +76,46 @@ class ServerConnect {
     }
 
     /**
+     * Fetches the Vietnamese (or any destLang) translation of a plain-text sentence
+     * using the MyMemory free translation API.
+     * URL: https://api.mymemory.translated.net/get?q={text}&langpair=en|{destLang}
+     * Response: { responseStatus: 200, responseData: { translatedText: "..." } }
+     *
+     * Glosbe is NOT used here because its sentence pages return 404 —
+     * it is a word dictionary, not a sentence translator.
+     *
+     * @param {string} sentence   - raw sentence, may contain HTML tags
+     * @param {string} destLang   - target language code, e.g. "vi"
+     * @returns {Promise<string|null>}
+     */
+    async _fetchContextTranslation(sentence, destLang = 'vi') {
+        if (!sentence) return null;
+
+        // Strip any HTML tags (e.g. <b>word</b>) before sending to the API
+        const plain = sentence.replace(/<[^>]+>/g, '').trim();
+        if (!plain) return null;
+
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(plain)}&langpair=en|${destLang}`;
+
+        try {
+            const response = await fetch(url, {
+                signal: AbortSignal.timeout(6000)
+            });
+            if (!response.ok) return null;
+
+            const data = await response.json();
+
+            if (data?.responseStatus === 200 && data?.responseData?.translatedText) {
+                return data.responseData.translatedText;
+            }
+            return null;
+        } catch (e) {
+            console.warn('[ServerConnect] _fetchContextTranslation error:', e);
+            return null;
+        }
+    }
+
+    /**
      * Parses the definition HTML from a dictionary script to extract:
      *   - meaning:             text inside <span class='vi_tran'>
      *   - exampleSentence:    text inside <span class='en_sent'>  (first match)
@@ -127,6 +167,13 @@ class ServerConnect {
                                (notedef.definitions ? notedef.definitions[0] : '') || '';
         const parsed = this._parseDefinitionHtml(definitionHtml);
 
+        // Strip HTML tags from the raw page sentence (e.g. <b>word</b> → word)
+        const strip = s => s ? s.replace(/<[^>]+>/g, '').trim() : null;
+        const plainSentence = strip(notedef.sentence);
+
+        // Fetch Vietnamese translation of the context sentence in parallel with everything else
+        const contextTranslation = await this._fetchContextTranslation(plainSentence, 'vi');
+
         const wordData = {
             lemma:               notedef.expression || null,
             type:                notedef.extrainfo  || null,
@@ -136,7 +183,8 @@ class ServerConnect {
             destLangMeaning:     parsed.meaning            || null,
             exampleSentence:     parsed.exampleSentence    || null,
             exampleTranslation:  parsed.exampleTranslation || null,
-            contextSentence:     notedef.sentence          || null,
+            contextSentence:     plainSentence             || null,
+            contextTranslation:  contextTranslation        || null,
             contextUrl:          notedef.url               || null,
         };
 
