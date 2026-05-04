@@ -159,6 +159,48 @@ async function onServicesChanged(e) {
     }
 }
 
+async function onServerConnectLogin(e) {
+    if (!e.originalEvent) return;
+
+    let options = await optionsLoad();
+    
+    const username = $('#serverconnect-username').val();
+    const password = $('#serverconnect-password').val();
+    
+    if (!username || !password) {
+        $('#serverconnect-login-status').text('Please enter username and password');
+        $('#serverconnect-login-status').addClass('error');
+        return;
+    }
+    
+    $('#serverconnect-login-status').text('Signing in...');
+    $('#serverconnect-login-status').removeClass('success error');
+    
+    const result = await options_api.serverConnectLogin({
+        username: username,
+        password: password
+    });
+    
+    if (result && result.success) {
+        $('#serverconnect-login-status').text('Login successful');
+        $('#serverconnect-login-status').addClass('success');
+        
+        options.serverconnecttoken = result.accessToken || result.access_token || options.serverconnecttoken || '';
+        options.serverconnectrefreshtoken = result.refreshToken || result.refresh_token || options.serverconnectrefreshtoken || '';
+        options.serverconnecttokenexpiresat = result.expiresAt || result.expires_at || result.expiresIn || result.expires_in || options.serverconnecttokenexpiresat || '';
+        
+        await options_api.optionsChanged(options);
+        
+        setTimeout(() => {
+            $('#serverconnect-login-status').removeClass('success');
+            $('#serverconnect-login-status').text('');
+        }, 3000);
+    } else {
+        $('#serverconnect-login-status').text('Login failed. Check the backend.');
+        $('#serverconnect-login-status').addClass('error');
+    }
+}
+
 async function onSaveClicked(e) {
     if (!e.originalEvent) return;
 
@@ -246,6 +288,7 @@ async function onReady() {
 
     $('#connect').click(onServicesChanged);
     $('#login').click(onServicesChanged);
+    $('#serverconnect-login-btn').click(onServerConnectLogin);
     $('#serverconnect-btn').click(onServicesChanged);
     $('#saveload').click(onSaveClicked);
     $('#saveclose').click(onSaveClicked);

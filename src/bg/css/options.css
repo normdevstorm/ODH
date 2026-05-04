@@ -125,3 +125,16 @@ a.tabmenu {
 .hidden {
     display: none;
 }
+#serverconnect-login-status {
+    color: #666;
+}
+
+#serverconnect-login-status.success {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+#serverconnect-login-status.error {
+    color: #f44336;
+    font-weight: bold;
+}

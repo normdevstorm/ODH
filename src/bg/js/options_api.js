@@ -26,5 +26,9 @@ class OptionsAPI{
 
     async optionsChanged(options){
         return await this.sendtoServiceworker({action:'optionsChanged',params:{options}});
-    }    
+    }
+    
+    async serverConnectLogin(params){
+        return await this.sendtoServiceworker({action:'serverConnectLogin',params});
+    }
 }

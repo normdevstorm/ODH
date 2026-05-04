@@ -302,6 +302,34 @@ class ODHServiceworker {
         callback(this.target ? await this.target.getVersion() : null);
     }
 
+    async api_serverConnectLogin(params) {
+        let { serverconnecturl, callback } = params;
+        
+        if (!this.target || !(this.target instanceof ServerConnect)) {
+            callback({ success: false, message: 'ServerConnect target not available' });
+            return;
+        }
+
+        const result = await this.target.login({
+            username: params.username || '',
+            password: params.password || '',
+        });
+
+        const authStatus = this.target.getAuthStatus ? this.target.getAuthStatus() : {};
+
+        if (result) {
+            callback({
+                success: true,
+                accessToken: authStatus.accessToken || result.accessToken || result.access_token || result.token || null,
+                refreshToken: authStatus.refreshToken || result.refreshToken || result.refresh_token || null,
+                expiresAt: authStatus.expiresAt || result.expiresAt || result.expires_at || result.expiresIn || result.expires_in || null,
+                message: 'Login successful'
+            });
+        } else {
+            callback({ success: false, message: 'Login failed' });
+        }
+    }
+
     // Sandbox API
     async loadScripts(list) {
         let promises = list.map((name) => this.loadScript(name));
@@ -327,6 +355,7 @@ class ODHServiceworker {
 }
 
 importScripts('ankiconnect.js');
+importScripts('authsession.js');
 importScripts('serverconnect.js');
 importScripts('builtin.js');
 importScripts('deinflector.js');

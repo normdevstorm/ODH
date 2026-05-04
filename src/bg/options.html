@@ -184,23 +184,37 @@
             <div id="service-options-serverconnect" class="service-options">
               <hr />
               <div class="crosspanel">
-                <label>URL</label>
+                <label>Username</label>
                 <input
                   type="text"
-                  id="serverconnecturl"
-                  placeholder="http://localhost:8085"
+                  id="serverconnect-username"
+                  placeholder="Username"
                   class="col-2x"
                 />
               </div>
               <div class="crosspanel">
-                <label>Auth Token</label>
+                <label>Password</label>
+                <input
+                  type="password"
+                  id="serverconnect-password"
+                  placeholder="Password"
+                  class="col-2x"
+                />
+              </div>
+              <div class="crosspanel">
+                <label>Login</label>
+                <label class="button" id="serverconnect-login-btn">Sign In</label>
+                <span id="serverconnect-login-status" style="margin-left: 10px; font-size: 0.9em;"></span>
+              </div>
+              <div class="crosspanel" style="display:none;" id="serverconnect-token-display">
+                <label>Access Token</label>
                 <input
                   type="text"
                   id="serverconnecttoken"
-                  placeholder="Bearer token (optional)"
+                  placeholder="(token stored securely)"
                   class="col-2x"
+                  disabled
                 />
-                <label class="button" id="serverconnect-btn">Connect</label>
               </div>
             </div>
             <div id="service-options-ankiprofile" class="service-options">

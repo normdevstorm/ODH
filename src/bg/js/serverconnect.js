@@ -1,15 +1,32 @@
+/* global ServerConnectAuthSession */
 class ServerConnect {
     constructor() {
         this.version = '1';
         this.url = 'http://localhost:8085'; // default server url
         this.token = null;
+        this.refreshToken = null;
+        this.tokenExpiresAt = null;
         this.connected = false;
+        this.authSession = new ServerConnectAuthSession();
     }
 
     async initConnection(options) {
+        this.setOptions(options);
+        this.connected = await this.checkConnection();
+    }
+
+    setOptions(options = {}) {
         this.url = options.serverconnecturl || this.url;
         this.token = options.serverconnecttoken || null;
-        this.connected = await this.checkConnection();
+        this.refreshToken = options.serverconnectrefreshtoken || null;
+        this.tokenExpiresAt = options.serverconnecttokenexpiresat || null;
+
+        this.authSession.configure(options);
+        this.authSession.setSession({
+            accessToken: this.token,
+            refreshToken: this.refreshToken,
+            expiresAt: this.tokenExpiresAt,
+        });
     }
 
     async checkConnection() {
@@ -46,25 +63,25 @@ class ServerConnect {
     async saveWord(wordData) {
         if (!wordData || !wordData.lemma) return null;
 
-        const headers = {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json; charset=utf-8'
-        };
-        if (this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
-        }
-
         try {
-            const rawResponse = await fetch(`${this.url}/v1/extension-digests/save`, {
+            const rawResponse = await this._requestJson('/v1/extension-digests/save', {
                 method: 'POST',
-                headers,
                 body: JSON.stringify(wordData)
             });
 
-            const response = await rawResponse.json();
+            let response = null;
+            try {
+                response = await rawResponse.json();
+            } catch (e) {
+                response = null;
+            }
 
             if (!rawResponse.ok) {
                 console.warn('[ServerConnect] saveWord failed:', response?.message);
+                if (rawResponse.status === 401) {
+                    this.authSession.clearSession();
+                    await this._persistAuthSession();
+                }
                 return null;
             }
 
@@ -75,6 +92,78 @@ class ServerConnect {
         }
     }
 
+    async _persistAuthSession() {
+        const patch = this.authSession.toStoragePatch();
+
+        try {
+            await chrome.storage.local.set(patch);
+        } catch (e) {
+            console.warn('[ServerConnect] failed to persist auth session:', e);
+        }
+    }
+
+    async _refreshAuthSession() {
+        const refreshUrl = `${this.url}/refresh-token`;
+
+        try {
+            const response = await fetch(refreshUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json; charset=utf-8'
+                },
+                body: JSON.stringify({
+                    refresh_token: this.authSession.refreshToken,
+                }),
+                signal: AbortSignal.timeout(6000)
+            });
+
+            if (!response.ok) {
+                return null;
+            }
+
+            const data = await response.json();
+            if (!data) {
+                return null;
+            }
+
+            this.authSession.applyTokenResponse(data);
+            this.token = this.authSession.accessToken;
+            this.refreshToken = this.authSession.refreshToken;
+            this.tokenExpiresAt = this.authSession.expiresAt;
+            await this._persistAuthSession();
+            return data;
+        } catch (e) {
+            console.warn('[ServerConnect] refresh token request failed:', e);
+            return null;
+        }
+    }
+
+    async _requestJson(path, options = {}, retryOnUnauthorized = true) {
+        const headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json; charset=utf-8',
+            ...(options.headers || {})
+        };
+
+        const authHeaders = await this.authSession.getAuthorizationHeader(false, () => this._refreshAuthSession());
+        Object.assign(headers, authHeaders);
+
+        const response = await fetch(`${this.url}${path}`, {
+            ...options,
+            headers,
+        });
+
+        if (response.status === 401 && retryOnUnauthorized) {
+            const refreshed = await this.authSession.refreshAccessToken(() => this._refreshAuthSession());
+            if (refreshed) {
+                return this._requestJson(path, options, false);
+            }
+        }
+
+        return response;
+    }
+                                                                                                               
     /**
      * Fetches the Vietnamese (or any destLang) translation of a plain-text sentence
      * using the MyMemory free translation API.
@@ -193,5 +282,62 @@ class ServerConnect {
 
     async getVersion() {
         return this.connected ? this.version : null;
+    }
+
+    async login(credentials = {}) {
+        const loginUrl = `${this.url}/login`;
+
+        try {
+            const response = await fetch(loginUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json; charset=utf-8'
+                },
+                body: JSON.stringify({
+                    ...credentials,
+                    platform: 'extension'
+                }),
+                signal: AbortSignal.timeout(6000)
+            });
+
+            if (!response.ok) {
+                console.warn('[ServerConnect] login failed:', response.status);
+                return null;
+            }
+
+            const data = await response.json();
+            if (!data) {
+                return null;
+            }
+
+            this.authSession.applyTokenResponse(data);
+            this.token = this.authSession.accessToken;
+            this.refreshToken = this.authSession.refreshToken;
+            this.tokenExpiresAt = this.authSession.expiresAt;
+            await this._persistAuthSession();
+            return data;
+        } catch (e) {
+            console.warn('[ServerConnect] login request failed:', e);
+            return null;
+        }
+    }
+
+    async logout() {
+        this.authSession.clearSession();
+        this.token = null;
+        this.refreshToken = null;
+        this.tokenExpiresAt = null;
+        await this._persistAuthSession();
+    }
+
+    getAuthStatus() {
+        return {
+            isLoggedIn: this.authSession.isAccessTokenAvailable(),
+            isExpired: this.authSession.isAccessTokenExpired(),
+            accessToken: this.authSession.accessToken || null,
+            refreshToken: this.authSession.refreshToken || null,
+            expiresAt: this.authSession.expiresAt || null
+        };
     }
 }
