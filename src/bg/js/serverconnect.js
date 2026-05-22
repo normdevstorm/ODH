@@ -1,13 +1,14 @@
-/* global ServerConnectAuthSession */
+/* global ServerConnectAuthSession, VocabKitchenCefr */
 class ServerConnect {
     constructor() {
         this.version = '1';
-        this.url = 'http://localhost:8085'; // default server url
+        this.url = 'https://learning.normdevstorm.me'; // default server url
         this.token = null;
         this.refreshToken = null;
         this.tokenExpiresAt = null;
         this.connected = false;
         this.authSession = new ServerConnectAuthSession();
+        this.vocabKitchen = new VocabKitchenCefr();
     }
 
     async initConnection(options) {
@@ -260,11 +261,16 @@ class ServerConnect {
         const strip = s => s ? s.replace(/<[^>]+>/g, '').trim() : null;
         const plainSentence = strip(notedef.sentence);
 
-        // Fetch Vietnamese translation of the context sentence in parallel with everything else
-        const contextTranslation = await this._fetchContextTranslation(plainSentence, 'vi');
+        const contextText = plainSentence || parsed.exampleSentence || null;
+        const lemma = this.vocabKitchen.sanitizeLemma(notedef.expression);
+
+        const [contextTranslation, difficultyLevel] = await Promise.all([
+            this._fetchContextTranslation(plainSentence, 'vi'),
+            this.vocabKitchen.lookupCefr(lemma, contextText),
+        ]);
 
         const wordData = {
-            lemma:               notedef.expression || null,
+            lemma:               lemma || null,
             type:                notedef.extrainfo  || null,
             ipa:                 notedef.reading    || null,
             audioUrl:            (notedef.audios && notedef.audios.length > 0) ? notedef.audios[0] : null,
@@ -275,6 +281,7 @@ class ServerConnect {
             contextSentence:     plainSentence             || null,
             contextTranslation:  contextTranslation        || null,
             contextUrl:          notedef.url               || null,
+            difficultyLevel:     difficultyLevel           || null,
         };
 
         return await this.saveWord(wordData);

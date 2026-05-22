@@ -12,6 +12,7 @@ function sanitizeOptions(options) {
         password: '',
 
         ankiconnecturl: 'http://127.0.0.1:8765', // define ankiconnect service ip and port
+        serverconnecturl: 'https://learning.normdevstorm.me',
         serverconnecttoken: '',
         serverconnectrefreshtoken: '',
         serverconnecttokenexpiresat: '',

@@ -303,7 +303,7 @@ class ODHServiceworker {
     }
 
     async api_serverConnectLogin(params) {
-        let { serverconnecturl, callback } = params;
+        let { callback } = params;
         
         if (!this.target || !(this.target instanceof ServerConnect)) {
             callback({ success: false, message: 'ServerConnect target not available' });
@@ -356,6 +356,7 @@ class ODHServiceworker {
 
 importScripts('ankiconnect.js');
 importScripts('authsession.js');
+importScripts('vocabkitchen.js');
 importScripts('serverconnect.js');
 importScripts('builtin.js');
 importScripts('deinflector.js');

@@ -151,7 +151,6 @@ async function onServicesChanged(e) {
         options.id = $('#id').val();
         options.password = $('#password').val();
         options.ankiconnecturl = $('#ankiconnecturl').val();
-        options.serverconnecturl = $('#serverconnecturl').val();
         options.serverconnecttoken = $('#serverconnecttoken').val();
 
         let newOptions = await options_api.optionsChanged(options);
@@ -222,7 +221,6 @@ async function onSaveClicked(e) {
     options.password = $('#password').val();
     
     options.ankiconnecturl = $('#ankiconnecturl').val();
-    options.serverconnecturl = $('#serverconnecturl').val();
     options.serverconnecttoken = $('#serverconnecttoken').val();
     options.tags = $('#tags').val();
     options.duplicate = $('#duplicate').val();
@@ -271,7 +269,6 @@ async function onReady() {
     $('#password').val(options.password);
 
     $('#ankiconnecturl').val(options.ankiconnecturl);
-    $('#serverconnecturl').val(options.serverconnecturl);
     $('#serverconnecttoken').val(options.serverconnecttoken);
     $('#tags').val(options.tags);
     $('#duplicate').val(options.duplicate);
